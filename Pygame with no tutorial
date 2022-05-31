@@ -1,0 +1,230 @@
+import pygame
+import time
+import random
+
+pygame.init()
+timer = 0
+dt = 0
+sleep = 0
+FPS = 60
+prev_time = time.time()
+clock = pygame.time.Clock()
+screen = pygame.display.set_mode((800, 900))
+font = pygame.font.Font('freesansbold.ttf', 20)
+score_font = pygame.font.Font('freesansbold.ttf', 50)
+pelet_moving = True
+direction = random.randint(1, 2)
+score = 0
+score_text = score_font.render("Score: " + str(score), True, (100, 64.7, 0))
+game_running = True
+
+# make player/sans
+PlayerIMG = pygame.image.load('SansImage.png')
+PlayerIMG = pygame.transform.scale(PlayerIMG, (128, 128))
+player_health = 5
+playerX = 0
+playerY = 0
+current_X = playerX
+current_Y = playerY
+rect = PlayerIMG.get_rect()
+player_health_text = font.render("HP: " + str(player_health), True, (255, 255, 255))
+damagePlayer = 0
+backgroundIMG = pygame.image.load('Background of game.jpg')
+backgroundIMG = pygame.transform.scale(backgroundIMG, (800, 900))
+
+# makes enemies
+enemyIMG = pygame.image.load('pngkey.com-flowey-png-5430128.png')
+enemyIMG = pygame.transform.scale(enemyIMG, (75, 75))
+enemy_rect = enemyIMG.get_rect()
+enemy_rect.x = random.randint(0, 725)
+enemy_rect.y = 325
+enemy_health = random.randint(1, 5)
+enemy_health_text = font.render("HP: " + str(enemy_health), True, (255, 255, 255))
+num_of_enemies = 10
+
+# make bones
+boneIMG = pygame.image.load('Sans-Attack.png')
+boneIMG = pygame.transform.scale(boneIMG, (800, 200))
+make_bone = False
+bone_rect = boneIMG.get_rect()
+bone_rect.x = 0
+bone_rect.y = 0
+
+# make pelets-attacks
+peletIMG = pygame.image.load('Love-Pelet-Flowey.png')
+peletIMG = pygame.transform.scale(peletIMG, (20, 30))
+pelet_rect = peletIMG.get_rect()
+pelet_rect.x = enemy_rect.x + 30
+pelet_rect.y = enemy_rect.y + 10
+
+# make objects
+obstacle = pygame.Rect(0, 250, 800, 25)
+obstacle2 = pygame.Rect(0, 400, 800, 25)
+
+# you lose text
+lose_text = font.render("you lose: " + str(score), True, (0, 0, 0))
+
+
+def collision_detect(collideCheck):
+    global enemy_health, enemy_health_text, player_health_text, player_health, damagePlayer, pelet_moving, score_text, score
+    for i in collideCheck:
+        if rect.colliderect(i):
+            if i == enemy_rect:
+                pygame.draw.rect(screen, (255, 0, 0), rect, 1)
+                rect.x = current_X
+                rect.y = current_Y
+                if enemy_health == 1:
+                    remake_enemy()
+                    enemy_health_text = font.render("HP: " + str(enemy_health), True, (255, 255, 255))
+                    score += 1
+                    score_text = score_font.render("Score: " + str(score), True, (100, 64.7, 0))
+                else:
+                    enemy_health -= 1
+                    enemy_health_text = font.render("HP: " + str(enemy_health), True, (255, 255, 255))
+            if i == obstacle or i == obstacle2:
+                pygame.draw.rect(screen, (255, 0, 0), rect, 1)
+                rect.x = current_X
+                rect.y = current_Y
+        if enemy_rect.colliderect(bone_rect):
+            enemy_health -= 1
+            if enemy_health == 0:
+                remake_enemy()
+                score += 1
+                score_text = font.render("Score: " + str(score), True, (255, 255, 0))
+                enemy_health_text = font.render("HP: " + str(enemy_health), True, (255, 255, 255))
+            else:
+                enemy_health_text = font.render("HP: " + str(enemy_health), True, (255, 255, 255))
+        if rect.colliderect(pelet_rect):
+            player_health -= 1
+            player_health_text = font.render("HP: " + str(player_health), True, (255, 255, 255))
+            pelet_moving = False
+            remake_enemy()
+            pelet_rect.x = enemy_rect.x + 30
+            pelet_rect.y = enemy_rect.y
+
+
+def make_pelet():
+    global direction
+    global pelet_moving
+    if -100 < pelet_rect.y < 900:
+        if direction == 1:
+            screen.blit(peletIMG, pelet_rect)
+            pelet_rect.y -= 1000 * dt
+            collision_detect([pelet_rect])
+        if direction == 2:
+            screen.blit(peletIMG, pelet_rect)
+            pelet_rect.y += 1000 * dt
+            collision_detect([pelet_rect])
+    if pelet_rect.y > 900 or pelet_rect.y < -100:
+        pelet_rect.x = enemy_rect.x + 30
+        pelet_rect.y = enemy_rect.y
+        remake_enemy()
+
+
+def remake_enemy():
+    global pelet_moving, enemy_health, direction
+    direction = random.randint(1, 2)
+    enemy_rect.x = random.randint(150, 700)
+    enemy_rect.y = 315
+    enemy_health = random.randint(1, 5)
+    pelet_rect.x = enemy_rect.x + 30
+    pelet_rect.y = enemy_rect.y
+    pelet_moving = True
+    print("made_enemy")
+
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    if game_running:
+        if player_health == 0:
+            score_text = score_font.render("L you lose cringe: " + str(score), True, (0, 0, 0))
+            game_running = False
+
+        screen.blit(backgroundIMG, (0, 0))
+
+        clock.tick(FPS)
+        now = time.time()
+        dt = now - prev_time
+        prev_time = now
+        current_Y = playerY
+        current_X = playerX
+
+        screen.blit(score_text, (150, 0))
+        screen.blit(peletIMG, pelet_rect)
+        screen.blit(PlayerIMG, rect)
+        screen.blit(enemy_health_text, (enemy_rect.x + 15, enemy_rect.y - 30))
+        screen.blit(player_health_text, (rect.x + 30, rect.y))
+        screen.blit(enemyIMG, enemy_rect)
+        pygame.draw.rect(screen, (0, 0, 0), obstacle)
+        pygame.draw.rect(screen, (0, 0, 0), obstacle2)
+
+        if make_bone:
+            screen.blit(boneIMG, bone_rect)
+            pygame.draw.rect(screen, (255, 0, 0), bone_rect, 1)
+
+        if pelet_moving:
+            make_pelet()
+        else:
+            direction = random.randint(1, 2)
+
+        # key controls
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                current_Y = rect.y
+                current_X = rect.x
+                rect.x, rect.y = pygame.mouse.get_pos()
+                rect.x -= 60
+                rect.y -= 60
+                collision_detect([enemy_rect, obstacle2, obstacle])
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_w:
+                    bone_rect = boneIMG.get_rect()
+                    bone_rect.x = 0
+                    bone_rect.y = 500
+                    make_bone = True
+                    pygame.draw.rect(screen, (255, 0, 0), bone_rect, 1)
+                    collision_detect([bone_rect])
+                if event.key == pygame.K_a:
+                    boneIMG = pygame.transform.rotate(boneIMG, 90)
+                    bone_rect = boneIMG.get_rect()
+                    bone_rect.x = 0
+                    bone_rect.y = 0
+                    make_bone = True
+                    pygame.draw.rect(screen, (255, 0, 0), bone_rect, 1)
+                    collision_detect([bone_rect])
+                if event.key == pygame.K_s:
+                    boneIMG = pygame.transform.rotate(boneIMG, 180)
+                    bone_rect = boneIMG.get_rect()
+                    bone_rect.x = 0
+                    bone_rect.y = 0
+                    make_bone = True
+                    pygame.draw.rect(screen, (255, 0, 0), bone_rect, 1)
+                    collision_detect([bone_rect])
+                if event.key == pygame.K_d:
+                    boneIMG = pygame.transform.rotate(boneIMG, 270)
+                    bone_rect = boneIMG.get_rect()
+                    bone_rect.x = 600
+                    bone_rect.y = 0
+                    make_bone = True
+                    pygame.draw.rect(screen, (255, 0, 0), bone_rect, 1)
+                    collision_detect([bone_rect])
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_w:
+                    make_bone = False
+                if event.key == pygame.K_a:
+                    boneIMG = pygame.transform.rotate(boneIMG, -90)
+                    bone_rect = boneIMG.get_rect()
+                    make_bone = False
+                if event.key == pygame.K_s:
+                    boneIMG = pygame.transform.rotate(boneIMG, -180)
+                    make_bone = False
+                if event.key == pygame.K_d:
+                    boneIMG = pygame.transform.rotate(boneIMG, -270)
+                    make_bone = False
+
+        pygame.display.flip()
